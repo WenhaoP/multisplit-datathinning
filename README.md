@@ -16,9 +16,15 @@ We first directly apply the rank-transformed subsampling algorithm to the data t
 
 ## Repository Structure 
 
+* `multisplit.R` contains the helper functions copied or modified from the Guo and Shah (2023)'s public GitHub [repo](https://github.com/richardkwo/MultiSplit) for implementing the rank-transformed subsampling in the combined algorithm.
+* `datathin.R` contains the helper functions copied or modified from the Guo and Shah (2023)'s public GitHub [repo](https://github.com/richardkwo/MultiSplit) for implementing the rank-transformed subsampling in the combined algorithm.
 * `algo.R` contains the combined algorithm.
-* `multi.R` contains the helper functions directly copied from the public GitHub [repo](https://github.com/richardkwo/MultiSplit) of (Guo and Shah,2023).
 * `main.R` contains the code for running the simulation study.
+* `plot.R` contains the plotting function for the type-1 error and conditional power plot
+
+## Note
+
+* Currently designed for one-dimensional ($\beta_1\in R$), continuous trajectory, and two-fold data thinning models with mean aggregation function
 
 ## References
 Guo, F. R. and Shah, R. D. (2023). Rank-transformed subsampling: inference for multiple data splitting and exchangeable p-values. arXiv preprint arXiv:2301.02739
