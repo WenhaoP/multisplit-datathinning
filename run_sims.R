@@ -3,17 +3,17 @@ source("algo.R")
 
 #' Generate the biological variation in a scRNA-seq data model.
 gen_Lambda <- function(n=200,p=100, k=1, Fs, intercepts) {
-  if (k==1) {
-    L <- rnorm(n)
-    L <- L - mean(L)
-  }
-  
-  LFT <- L%*%t(Fs)
-  logLambda <- t(apply(LFT, 1, function(u) u+intercepts))
-  Lambda <- exp(logLambda)
-  
-  return(Lambda)
-  return(list(dat=X,mean=EX, coeffs=Fs, intercepts=intercepts))
+if (k==1) {
+  L <- rnorm(n)
+  L <- L - mean(L)
+}
+
+LFT <- L%*%t(Fs)
+logLambda <- t(apply(LFT, 1, function(u) u+intercepts))
+Lambda <- exp(logLambda)
+
+return(Lambda)
+return(list(dat=X,mean=EX, coeffs=Fs, intercepts=intercepts))
 }
 
 #' Generate the observed data in a scRNA-seq data model.
@@ -45,7 +45,12 @@ one_trial <- function(
   
   X <- gen_pois_data(gammas,Lambda)
   
-  result <- NULL
+  if (file.exists(filename)) {
+    result <- read.csv(filename)
+  } else {
+    result <- NULL
+  }
+  
   for (ep in eps) {
     res <- cbind(
         1:p, 
@@ -74,5 +79,5 @@ one_trial <- function(
       "estPopuPara", "cor", "eps", "type", "propImp",
       "n", "p", "prop1"))
 
-  write_csv(result, filename)
+  write.csv(result, filename)
 }
