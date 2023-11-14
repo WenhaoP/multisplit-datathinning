@@ -59,7 +59,8 @@ one_trial <- function(
         datathin.multisplit(
             X,
             gammas,
-            Lambda,   
+            Lambda,
+            K=K,   
             eps=ep,
             L=L      
         ), 
@@ -70,14 +71,15 @@ one_trial <- function(
         p, 
         propLowMedHigh[1]
     )
-    result <- rbind(result, res)
-    # write(t(res), file=filename, append=TRUE, ncol=12)
-  }
-  result <- result %>%
-    as_tibble() %>%
-    setNames(c("j", "trueCoeff", "intercept", "pval",
-      "estPopuPara", "cor", "eps", "type", "propImp",
-      "n", "p", "prop1"))
 
-  write.csv(result, filename)
+    res <- res %>%
+      as_tibble() %>%
+      setNames(c("j", "trueCoeff", "intercept", "pval",
+        "estPopuPara", "cor", "eps", "type", "propImp",
+        "n", "p", "prop1"))
+
+    result <- rbind(result, res)
+  }
+
+  write.csv(result, filename, row.names=FALSE)
 }
