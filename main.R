@@ -26,13 +26,14 @@ ns <- c(200)
 ps <- c(10)
 
 ## number of monte-carlo iterations per job
-nreps_per_combo <- 100
+nreps_per_combo <- 10
 
 ## simulation name
 simname <- "test"
 
 ## epsilon candidates
-eps=c(0.1,0.25,0.5,0.75,0.9)
+# eps=c(0.1,0.25,0.5,0.75,0.9)
+eps=c(0.5)
 
 ## set up grid of parameters
 param_grid <- expand.grid(regCoeff=regCoeffs,
@@ -50,16 +51,17 @@ for (i in seq_len(1)){
   set.seed(i)
   current_dynamic_args <- param_grid[i,]
 
-  filename <- paste("res/", simname, i, ".txt", sep="")
+  filename <- paste("res/", simname, i, ".csv", sep="")
   
   replicate(nreps_per_combo, 
-                      one_trial_count_split(n=current_dynamic_args$n,
+                      one_trial(n=current_dynamic_args$n,
                                             p=current_dynamic_args$p,
                                             filename,
                                             k=1,
                                             K=2,
                                             propImp=current_dynamic_args$propImp, 
                                             eps=eps, 
+                                            L=15,
                                             sig_strength=current_dynamic_args$regCoeff,
                                  propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,]))
 }

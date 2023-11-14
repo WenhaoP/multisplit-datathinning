@@ -1,3 +1,4 @@
+library(tidyverse)
 source("algo.R")
 
 #' Generate the biological variation in a scRNA-seq data model.
@@ -22,7 +23,7 @@ gen_pois_data <- function(gammas, Lambda) {
   return(X)
 }
 
-one_trial_count_split <- function(
+one_trial <- function(
     n,
     p,
     filename, 
@@ -31,8 +32,8 @@ one_trial_count_split <- function(
     propImp=0.1, 
     sig_strength=5, 
     propLowMedHigh = c(1/2,1/2), 
-    eps=c(0.5), 
-    c=1) {
+    eps=c(0.5),
+    L=50) {
   intercepts <- sample(c(log(3), log(25)), prob=propLowMedHigh, replace=TRUE, size=p)
   num_non_null <- floor(propImp * p)
   numNull <- p - num_non_null
@@ -44,6 +45,7 @@ one_trial_count_split <- function(
   
   X <- gen_pois_data(gammas,Lambda)
   
+  result <- NULL
   for (ep in eps) {
     res <- cbind(
         1:p, 
@@ -53,7 +55,8 @@ one_trial_count_split <- function(
             X,
             gammas,
             Lambda,   
-            eps=ep       
+            eps=ep,
+            L=L      
         ), 
         ep, 
         "known", 
@@ -62,7 +65,14 @@ one_trial_count_split <- function(
         p, 
         propLowMedHigh[1]
     )
-    write(t(res), file=filename, append=TRUE, ncol=12)
+    result <- rbind(result, res)
+    # write(t(res), file=filename, append=TRUE, ncol=12)
   }
-  
+  result <- result %>%
+    as_tibble() %>%
+    setNames(c("j", "trueCoeff", "intercept", "pval",
+      "estPopuPara", "cor", "eps", "type", "propImp",
+      "n", "p", "prop1"))
+
+  write_csv(result, filename)
 }
