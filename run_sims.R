@@ -33,7 +33,8 @@ one_trial <- function(
     sig_strength=5, 
     propLowMedHigh = c(1/2,1/2), 
     eps=c(0.5),
-    L=50) {
+    L=50,
+    verbose=FALSE) {
   intercepts <- sample(c(log(3), log(25)), prob=propLowMedHigh, replace=TRUE, size=p)
   num_non_null <- floor(propImp * p)
   numNull <- p - num_non_null
@@ -62,7 +63,8 @@ one_trial <- function(
             Lambda,
             K=K,   
             eps=ep,
-            L=L      
+            L=L,
+            verbose=verbose      
         ), 
         ep, 
         "known", 

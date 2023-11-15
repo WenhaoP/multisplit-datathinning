@@ -23,10 +23,10 @@ regCoeffs <- c(
     log(15), log(20))
 propImps <- c(0.1)
 ns <- c(200)
-ps <- c(100)
+ps <- c(10)
 
 ## number of monte-carlo iterations per job
-nreps_per_combo <- 100
+nreps_per_combo <- 10
 
 ## simulation name
 simname <- "test"
@@ -36,33 +36,40 @@ simname <- "test"
 eps=c(0.5)
 
 ## set up grid of parameters
-param_grid <- expand.grid(regCoeff=regCoeffs,
-                          propImp=propImps,
-                          propLowMedHigh = propLowMedHighs,
-                          n=ns,
-                          p=ps)
+param_grid <- expand.grid(
+    regCoeff=regCoeffs,
+    propImp=propImps,
+    propLowMedHigh = propLowMedHighs,
+    n=ns,
+    p=ps
+)
 
-probMatrix <- rbind(c(0.5,0.5),
-                    c(0,1),
-                    c(1,0))
+probMatrix <- rbind(
+    c(0.5, 0.5),
+    c(0,1),
+    c(1,0)
+)
 
 for (i in seq_len(nrow(param_grid))){
 # for (i in seq_len(1)){
-  set.seed(i)
-  cat("Working on", i, "th parameter combination\n")
-  current_dynamic_args <- param_grid[i,]
+    set.seed(i)
+    cat("Working on", i, "th parameter combination\n")
+    current_dynamic_args <- param_grid[i,]
 
-  filename <- paste("res/", simname, i, ".csv", sep="")
-  
-  replicate(nreps_per_combo, 
-                      one_trial(n=current_dynamic_args$n,
-                                            p=current_dynamic_args$p,
-                                            filename,
-                                            k=1,
-                                            K=2,
-                                            propImp=current_dynamic_args$propImp, 
-                                            eps=eps, 
-                                            # L=50,
-                                            sig_strength=current_dynamic_args$regCoeff,
-                                 propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,]))
+    filename <- paste("res/", simname, i, ".csv", sep="")
+
+    replicate(nreps_per_combo, 
+        one_trial(
+        n=current_dynamic_args$n,
+        p=current_dynamic_args$p,
+        filename,
+        k=1,
+        K=2,
+        propImp=current_dynamic_args$propImp, 
+        eps=eps, 
+        L=15,
+        sig_strength=current_dynamic_args$regCoeff,
+        propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
+        verbose=TRUE
+    ))
 }

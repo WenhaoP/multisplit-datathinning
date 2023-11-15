@@ -72,87 +72,106 @@ datathin.multisplit <- function(
     B <- J * floor(n / m) # number of subsamples
     if (K != 2) { L = K } # set the number of test repetitions
 
-    coeff.ests <- array(dim = c(p, B, L))
-    popu.para.ests <- array(dim = c(p, B, L))
-    true.corrs <- array(dim = c(p, B, L))
+    # coeff.ests <- array(dim = c(p, B, L))
+    # popu.para.ests <- array(dim = c(p, B, L))
+    # true.corrs <- array(dim = c(p, B, L))
 
     tuple.mat <- get.m.out.n.tuples(m, n, B) # generate the indices of elements in each sample
     
     if (verbose) {
-        message(sprintf("Subsampling with %d tuples (m = %d) and %d splits ...", B, m, n.splits))
+        message(sprintf("Subsampling with %d tuples (m = %d) and %d splits ...", B, m, L))
     }
-
-    # pval.jobs <- plyr::llply(1:B, function(b) {
-    #     future::future({
-    #         data.sub <- data[tuple.mat[b,], ]  # of size m
-    #         Lambda.sub <- Lambda[tuple.mat[b,], ]
-    #         if (K == 2){
-    #             # iterate over splits
-    #             result <- replicate(L, {
-    #                 countsplit(data.sub, Lambda.sub, eps, gammas=rep(1,NROW(data.sub)))
-    #             })
-                
-    #         } else {
-    #             # apply the K-fold data thinning to the subsample
-    #             # TODO
-
-    #             # iterate over splits
-    #             replicate(L, {
-    #                 # aggregate thinned sets into train and test set 
-    #                 # TODO
-
-    #                 # apply the latent variable estimation and differential expression analysis to train and test set
-    #                 # TODO
-
-    #                 # store the population coefficient
-    #                 # TODO
-    #             })
-    #         }
-    #     }, seed=TRUE)
-
-    # }, .progress = ifelse(verbose, "text", "none"))
 
     pval.jobs <- plyr::llply(1:B, function(b) {
-        data.sub <- data[tuple.mat[b,], ]  # of size m
-        Lambda.sub <- Lambda[tuple.mat[b,], ]   
-        gammas.sub <- gammas[tuple.mat[b,]] 
+        future::future({
+            data.sub <- data[tuple.mat[b,], ]  # of size m
+            Lambda.sub <- Lambda[tuple.mat[b,], ]   
+            gammas.sub <- gammas[tuple.mat[b,]] 
 
-        replicate(L, {countsplit(data.sub, Lambda.sub, eps, gammas.sub)})     
-        }
-    )
+            replicate(L, {countsplit(data.sub, Lambda.sub, eps, gammas.sub)})     
+        }, seed=TRUE)
+    }, .progress=ifelse(verbose, "text", "none"))
 
-    for (b in seq_len(B)) {
-        data.sub <- data[tuple.mat[b,], ]  # of size m
-        Lambda.sub <- Lambda[tuple.mat[b,], ]   
-        gammas.sub <- gammas[tuple.mat[b,]] 
-        if (K == 2) {
-            # iterate over splits
-            result <- replicate(L, {
-                countsplit(data.sub, Lambda.sub, eps, gammas.sub)
-            })
-            coeff.ests[1:p, b, 1:L] <- result[1:p, 1, 1:L]
-            popu.para.ests[1:p, b, 1:L] <- result[1:p, 2, 1:L]
-            true.corrs[1:p, b, 1:L] <- result[1:p, 3, 1:L]
-        }
-    }
+    T.mat <- plyr::laply(pval.jobs, future::value)
+
+    # for (b in seq_len(B)) {
+    #     data.sub <- data[tuple.mat[b,], ]  # of size m
+    #     Lambda.sub <- Lambda[tuple.mat[b,], ]   
+    #     gammas.sub <- gammas[tuple.mat[b,]] 
+    #     if (K == 2) {
+    #         # iterate over splits
+    #         result <- replicate(L, {
+    #             countsplit(data.sub, Lambda.sub, eps, gammas.sub)
+    #         })
+    #         coeff.ests[1:p, b, 1:L] <- result[1:p, 1, 1:L]
+    #         popu.para.ests[1:p, b, 1:L] <- result[1:p, 2, 1:L]
+    #         true.corrs[1:p, b, 1:L] <- result[1:p, 3, 1:L]
+    #     }
+    # }
 
     # observed T
     T.obs.vec <- replicate(L, countsplit(data, Lambda, eps, gammas)[, 1])
-    p.values = numeric(p)
+    p.values <- numeric(p)
 
+    # p.values <- apply(
+    #     T.mat[1:B, 1:p, 1, 1:L],
+    #     2,
+    #     function(array) {
+    #         T.mat.transformed <- (rank(array, ties.method = "random") - 1/2) / length(array)  # rank transform
+    #         T.mat.transformed <- matrix(T.mat.transformed, nrow=B)
+
+    #          # apply inverse CDF
+    #         T.mat.transformed <- stats::qnorm(T.mat.transformed)
+    #         if (verbose) {
+    #             message(sprintf("Max change from rank transform = %g", max(abs(T.mat.transformed - array))))
+    #         }
+    #         # aggregation 
+    #         if (!is.list(S)) {
+    #             # single aggregation function ------
+    #             if (verbose) {
+    #                 message(sprintf("Single aggregation function (reject for %s values)", ifelse(reject.larger, "larger", "smaller")))
+    #             }
+    #             T.obs <- S(T.obs.vec[j,])
+    #             T.sub <- apply(T.mat.transformed, 1, S)
+    #             if (reject.larger) {
+    #                 if (reject.twoside) {
+    #                     p.value <- mean(abs(T.sub) > abs(T.obs))
+    #                 } else {
+    #                     p.value <- mean(T.sub > T.obs)
+    #                 }
+    #             } else {
+    #                 if (reject.twoside) {
+    #                     p.value <- mean(abs(T.sub) < abs(T.obs))
+    #                 } else {
+    #                     p.value <- mean(T.sub < T.obs)
+    #                 }
+    #             }
+    #         } else {
+    #             # multiple aggregation functions -----
+    #             if (verbose) {
+    #             message(sprintf("Adapting to the best among %d aggregation functions (reject for %s values)", length(S), ifelse(reject.larger, "larger", "smaller")))
+    #             }
+    #             T.obs <- sapply(S, function(.s) .s(T.obs.vec))
+    #             T.sub <- sapply(S, function(.s) apply(T.mat.transformed, 1, .s))
+    #             p.value <- get.smart.agg.pval(T.obs, T.sub, reject.larger=reject.larger)
+    #         }
+    #         p.value
+    #     }
+    # )
+    coeff.ests <- T.mat[1:B, 1:p, 1, 1:L]
     for (j in seq_len(p)) {
     # retrieve value
     # T.mat <- plyr::laply(pval.jobs, future::value)
 
-        T.mat <- coeff.ests[j, 1:B, 1:L]
+        T.mat.j <- coeff.ests[1:B, j, 1:L]
 
-        T.mat.transformed <- (rank(T.mat, ties.method = "random") - 1/2) / length(T.mat)  # rank transform
+        T.mat.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
         T.mat.transformed <- matrix(T.mat.transformed, nrow=B)
 
         # apply inverse CDF
         T.mat.transformed <- stats::qnorm(T.mat.transformed)
         if (verbose) {
-            message(sprintf("Max change from rank transform = %g", max(abs(T.mat.transformed - T.mat))))
+            message(sprintf("Max change from rank transform = %g", max(abs(T.mat.transformed - T.mat.j))))
         }
         # aggregation 
         if (!is.list(S)) {
@@ -189,8 +208,10 @@ datathin.multisplit <- function(
 
     }
 
-    popu.para.ests.mean = apply(popu.para.ests, c(1), mean) # Might need to change the dimension the average is w.r.t. for higher-dimensioned beta_1
-    true.corrs.mean = apply(true.corrs, c(1), mean)
+    # popu.para.ests.mean = apply(popu.para.ests, c(1), mean) # Might need to change the dimension the average is w.r.t. for higher-dimensioned beta_1
+    # true.corrs.mean = apply(true.corrs, c(1), mean)
+    popu.para.ests.mean <- apply(T.mat[1:B, 1:p, 2, 1:L], 2, mean)
+    true.corrs.mean <- apply(T.mat[1:B, 1:p, 3, 1:L], 2, mean)
 
     cbind(p.values, popu.para.ests.mean, true.corrs.mean) # placeholder for correlation
 }
