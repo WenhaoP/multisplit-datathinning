@@ -18,7 +18,11 @@ countsplit <- function(X, Lambda, ep, gammas=rep(1,NROW(X))) {
         Xtest, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
     )
     popu.para.est <- suppressWarnings(apply(Lambda, 2, function(u) summary(glm(u~pseudotime, family="poisson"))$coefficients[2,1]))
-    cbind(coeff.est, popu.para.est)
+
+    trueprincomp <- svd(apply(log(Lambda),2,function(u) u-mean(u)))$u[,1]
+    true.cor <- cor(pseudotime, trueprincomp)
+
+    cbind(coeff.est, popu.para.est, true.cor)
 }
 
 
@@ -70,6 +74,7 @@ datathin.multisplit <- function(
 
     coeff.ests <- array(dim = c(p, B, L))
     popu.para.ests <- array(dim = c(p, B, L))
+    true.corrs <- array(dim = c(p, B, L))
 
     tuple.mat <- get.m.out.n.tuples(m, n, B) # generate the indices of elements in each sample
     
@@ -107,27 +112,32 @@ datathin.multisplit <- function(
 
     # }, .progress = ifelse(verbose, "text", "none"))
 
+    pval.jobs <- plyr::llply(1:B, function(b) {
+        data.sub <- data[tuple.mat[b,], ]  # of size m
+        Lambda.sub <- Lambda[tuple.mat[b,], ]   
+        gammas.sub <- gammas[tuple.mat[b,]] 
+
+        replicate(L, {countsplit(data.sub, Lambda.sub, eps, gammas.sub)})     
+        }
+    )
+
     for (b in seq_len(B)) {
         data.sub <- data[tuple.mat[b,], ]  # of size m
-        Lambda.sub <- Lambda[tuple.mat[b,], ]    
+        Lambda.sub <- Lambda[tuple.mat[b,], ]   
+        gammas.sub <- gammas[tuple.mat[b,]] 
         if (K == 2) {
             # iterate over splits
             result <- replicate(L, {
-                countsplit(data.sub, Lambda.sub, eps, gammas=rep(1,NROW(data.sub)))
+                countsplit(data.sub, Lambda.sub, eps, gammas.sub)
             })
             coeff.ests[1:p, b, 1:L] <- result[1:p, 1, 1:L]
             popu.para.ests[1:p, b, 1:L] <- result[1:p, 2, 1:L]
+            true.corrs[1:p, b, 1:L] <- result[1:p, 3, 1:L]
         }
     }
 
     # observed T
-    T.obs.vec <- replicate(L, countsplit(data, Lambda, eps, gammas=rep(1,NROW(data)))[, 1])
-
-    # if (reject.twoside) {
-    #     T.obs.vec <- abs(T.obs.vec)
-    #     coeff.ests <- abs(coeff.ests)
-    # }
-
+    T.obs.vec <- replicate(L, countsplit(data, Lambda, eps, gammas)[, 1])
     p.values = numeric(p)
 
     for (j in seq_len(p)) {
@@ -180,6 +190,7 @@ datathin.multisplit <- function(
     }
 
     popu.para.ests.mean = apply(popu.para.ests, c(1), mean) # Might need to change the dimension the average is w.r.t. for higher-dimensioned beta_1
+    true.corrs.mean = apply(true.corrs, c(1), mean)
 
-    cbind(p.values, popu.para.ests.mean, -999) # placeholder for correlation
+    cbind(p.values, popu.para.ests.mean, true.corrs.mean) # placeholder for correlation
 }

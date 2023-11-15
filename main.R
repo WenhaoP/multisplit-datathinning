@@ -23,10 +23,10 @@ regCoeffs <- c(
     log(15), log(20))
 propImps <- c(0.1)
 ns <- c(200)
-ps <- c(10)
+ps <- c(100)
 
 ## number of monte-carlo iterations per job
-nreps_per_combo <- 10
+nreps_per_combo <- 100
 
 ## simulation name
 simname <- "test"
@@ -46,9 +46,10 @@ probMatrix <- rbind(c(0.5,0.5),
                     c(0,1),
                     c(1,0))
 
-# for (i in seq_len(nrow(param_grid))){
-for (i in seq_len(1)){
+for (i in seq_len(nrow(param_grid))){
+# for (i in seq_len(1)){
   set.seed(i)
+  cat("Working on", i, "th parameter combination\n")
   current_dynamic_args <- param_grid[i,]
 
   filename <- paste("res/", simname, i, ".csv", sep="")
@@ -61,7 +62,7 @@ for (i in seq_len(1)){
                                             K=2,
                                             propImp=current_dynamic_args$propImp, 
                                             eps=eps, 
-                                            L=15,
+                                            # L=50,
                                             sig_strength=current_dynamic_args$regCoeff,
                                  propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,]))
 }

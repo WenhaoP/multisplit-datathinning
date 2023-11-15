@@ -43,7 +43,7 @@ one_trial <- function(
   Lambda <- gen_Lambda(n, p, k, Fs, intercepts)
   gammas <- rgamma(n, 10, scale=1/10)
   
-  X <- gen_pois_data(gammas,Lambda)
+  X <- gen_pois_data(gammas, Lambda)
   
   if (file.exists(filename)) {
     result <- read.csv(filename)
