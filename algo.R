@@ -72,10 +72,6 @@ datathin.multisplit <- function(
     B <- J * floor(n / m) # number of subsamples
     if (K != 2) { L = K } # set the number of test repetitions
 
-    # coeff.ests <- array(dim = c(p, B, L))
-    # popu.para.ests <- array(dim = c(p, B, L))
-    # true.corrs <- array(dim = c(p, B, L))
-
     tuple.mat <- get.m.out.n.tuples(m, n, B) # generate the indices of elements in each sample
     
     if (verbose) {
@@ -93,21 +89,6 @@ datathin.multisplit <- function(
     }, .progress=ifelse(verbose, "text", "none"))
 
     T.mat <- plyr::laply(pval.jobs, future::value)
-
-    # for (b in seq_len(B)) {
-    #     data.sub <- data[tuple.mat[b,], ]  # of size m
-    #     Lambda.sub <- Lambda[tuple.mat[b,], ]   
-    #     gammas.sub <- gammas[tuple.mat[b,]] 
-    #     if (K == 2) {
-    #         # iterate over splits
-    #         result <- replicate(L, {
-    #             countsplit(data.sub, Lambda.sub, eps, gammas.sub)
-    #         })
-    #         coeff.ests[1:p, b, 1:L] <- result[1:p, 1, 1:L]
-    #         popu.para.ests[1:p, b, 1:L] <- result[1:p, 2, 1:L]
-    #         true.corrs[1:p, b, 1:L] <- result[1:p, 3, 1:L]
-    #     }
-    # }
 
     # observed T
     T.obs.vec <- replicate(L, countsplit(data, Lambda, eps, gammas)[, 1])
@@ -158,11 +139,10 @@ datathin.multisplit <- function(
     #         p.value
     #     }
     # )
+
     coeff.ests <- T.mat[1:B, 1:p, 1, 1:L]
     for (j in seq_len(p)) {
-    # retrieve value
-    # T.mat <- plyr::laply(pval.jobs, future::value)
-
+        # retrieve value
         T.mat.j <- coeff.ests[1:B, j, 1:L]
 
         T.mat.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
@@ -173,6 +153,7 @@ datathin.multisplit <- function(
         if (verbose) {
             message(sprintf("Max change from rank transform = %g", max(abs(T.mat.transformed - T.mat.j))))
         }
+
         # aggregation 
         if (!is.list(S)) {
             # single aggregation function ------
@@ -208,8 +189,6 @@ datathin.multisplit <- function(
 
     }
 
-    # popu.para.ests.mean = apply(popu.para.ests, c(1), mean) # Might need to change the dimension the average is w.r.t. for higher-dimensioned beta_1
-    # true.corrs.mean = apply(true.corrs, c(1), mean)
     popu.para.ests.mean <- apply(T.mat[1:B, 1:p, 2, 1:L], 2, mean)
     true.corrs.mean <- apply(T.mat[1:B, 1:p, 3, 1:L], 2, mean)
 
