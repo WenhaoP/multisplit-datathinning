@@ -3,4 +3,4 @@
 
 rm -rf ./res/*.csv
 
-Rscript main_cluster.R --simname test --nreps 100
+Rscript main_cluster.R --simname n_200_p_100 --nreps 100

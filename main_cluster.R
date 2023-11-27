@@ -60,15 +60,19 @@ ps <- c(100)
 nreps_per_combo <- args$nreps
 
 ## set up grid of parameters
-param_grid <- expand.grid(regCoeff=regCoeffs,
-                          propImp=propImps,
-                          propLowMedHigh = propLowMedHighs,
-                          n=ns,
-                          p=ps)
+param_grid <- expand.grid(
+    regCoeff=regCoeffs,
+    propImp=propImps,
+    propLowMedHigh = propLowMedHighs,
+    n=ns,
+    p=ps
+)
 
-probMatrix <- rbind(c(0.5,0.5),
-                    c(0,1),
-                    c(1,0))
+probMatrix <- rbind(
+    c(0.5,0.5),
+    c(0,1),
+    c(1,0)
+)
 
 ## -----------------------------------------
 ## get current dynamic arguments
@@ -93,13 +97,16 @@ filename <- paste("res/", args$simname, jobid, ".csv", sep="")
 eps=c(0.1,0.25,0.5,0.75,0.9)
  
 system.time(replicate(nreps_per_combo, 
-                      one_trial(n=current_dynamic_args$n,
-                                            p=current_dynamic_args$p,
-                                            filename,
-                                            k=1,
-                                            K=2,
-                                            propImp=current_dynamic_args$propImp, 
-                                            eps=eps, 
-                                            # L=50,
-                                            sig_strength=current_dynamic_args$regCoeff,
-                                 propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,])))
+    one_trial(
+        n=current_dynamic_args$n,
+        p=current_dynamic_args$p,
+        filename,
+        k=1,
+        K=2,
+        propImp=current_dynamic_args$propImp, 
+        eps=eps, 
+        # L=10,
+        sig_strength=current_dynamic_args$regCoeff,
+        propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
+        verbose=TRUE
+    )))

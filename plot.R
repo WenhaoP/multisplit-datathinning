@@ -19,7 +19,7 @@ library(patchwork, lib="/home/users/wenhaop/R_lib")
 # setwd("~/countsplit_paper/Fig3_mainsims_resubmit/")
 
 ## simulation name
-simname <- "test"
+simname <- "n_200_p_100"
 
 #### DATA FOR FIGS 2-4
 setwd("~/multisplit-datathinning/res")
@@ -50,11 +50,11 @@ p1null <- ggplot(data=null_res_subset, aes(sample=as.numeric(pval), col=as.facto
   xlab("Unif(0,1) Quantiles")+
   ylab("Sample Quantiles")+
   coord_fixed()+
-  theme_bw()+
-  guides(col="none")
+  theme_bw()
+  # guides(col="none")
 
 p1null+plot_layout(nrow=1, guides="collect")
-ggsave(paste("figures/",simname, "_type1error.png", sep=""))
+ggsave(paste("~/multisplit-datathinning/figures/",simname, "_type1error.png", sep=""))
 
 ##### DETECTION FIGURE
 detection_res <- power_res %>% filter(j==1) %>% group_by(trueCoeff, eps,prop1) %>%
@@ -69,9 +69,6 @@ detection_res$intercept_dist <- ordered(detection_res$intercept_dist ,
                                                  "50% Low Intercept",
                                               "100% Low Intercept"))
 
-
-
-
 ### DETECTION FIGURE
 p1detect <- ggplot(data=detection_res, aes(x=abs(trueCoeff), y=avcor, col=as.factor(eps)))+
   geom_smooth(se=FALSE, method="glm",
@@ -82,7 +79,7 @@ p1detect <- ggplot(data=detection_res, aes(x=abs(trueCoeff), y=avcor, col=as.fac
   xlab(expression(beta['1j']))+
   theme_bw()
 p1detect+plot_layout(guides="collect", nrow=2)
-ggsave(paste("figures/",simname, "_detection.png", sep=""))
+ggsave(paste("~/multisplit-datathinning/figures/",simname, "_detection.png", sep=""))
 
 ###### POWER
 power_res <- power_res %>% filter(prop1==0.5)
@@ -94,13 +91,14 @@ power_res$intercept3 = ordered(power_res$intercept3, levels=c("Low Intercept",
 p1power <- ggplot(data=power_res, aes(x=abs(estPopuPara), y=as.numeric(pval<0.05), col=as.factor(eps)))+
   geom_smooth(se=FALSE, method="glm", method.args=list(family="binomial"))+
   facet_grid(cols=vars(intercept3))+
+  xlim(0, 5)+
   xlab(expression(beta(widehat(L)(X^{train}), bold(X)^{test}))) + ylab("Power")+ggtitle("Power")+
   labs(col=expression(epsilon))+
   theme_bw()
 
 p1power+plot_layout(guides="collect", nrow=1)
-ggsave(paste("figures/",simname, "_power.png", sep=""))
+ggsave(paste("~/multisplit-datathinning/figures/",simname, "_power.png", sep=""))
 
 p1null+ p1detect+ p1power+
   plot_layout(guides="collect", nrow=2)
-ggsave(paste("figures/",simname, "_megaFig2.eps", sep=""), width=15, height=6.5)
+ggsave(paste("~/multisplit-datathinning/figures/",simname, "_megaFig2.eps", sep=""), width=15, height=6.5)
