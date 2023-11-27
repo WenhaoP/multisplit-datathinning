@@ -87,7 +87,19 @@ power_res$intercept3 = "High Intercept"
 power_res$intercept3[power_res$intercept2==3] =  "Low Intercept"
 power_res$intercept3 = ordered(power_res$intercept3, levels=c("Low Intercept",
                                                                           "High Intercept"))
-                                                                                        
+
+# Raw plot
+p1power.raw <- ggplot(data=power_res, aes(x=abs(estPopuPara), y=as.numeric(pval<0.05)))+
+  geom_point()+
+  facet_grid(rows=vars(as.factor(eps)), cols=vars(intercept3))+
+  xlim(0, 5)+
+  xlab(expression(beta(widehat(L)(X^{train}), bold(X)^{test}))) + ylab("Power")+ggtitle("Power")+
+  labs(col=expression(epsilon))+
+  theme_bw()
+p1power.raw+plot_layout(guides="collect", nrow=1)
+ggsave(paste("~/multisplit-datathinning/figures/",simname, "_rawpower.png", sep=""))
+
+# GLM smoothing
 p1power <- ggplot(data=power_res, aes(x=abs(estPopuPara), y=as.numeric(pval<0.05), col=as.factor(eps)))+
   geom_smooth(se=FALSE, method="glm", method.args=list(family="binomial"))+
   facet_grid(cols=vars(intercept3))+
