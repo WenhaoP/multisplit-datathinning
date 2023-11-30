@@ -68,7 +68,7 @@ for (i in seq_len(nrow(param_grid))){
         K=2,
         propImp=current_dynamic_args$propImp, 
         eps=eps, 
-        L=15,
+        L=50,
         sig_strength=current_dynamic_args$regCoeff,
         propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
         verbose=TRUE

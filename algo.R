@@ -8,16 +8,16 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
 
     if (K == 2) {
         # apply the k-fold data thinning to the subsample
-        Xtrain <- apply(X, 2, function(u) rbinom(n=length(u), size=u, p=ep))
-        Xtest <- X - Xtrain
+        X.train <- apply(X, 2, function(u) rbinom(n=length(u), size=u, p=ep))
+        X.test <- X - X.train
 
         # apply the latent variable estimation and differential expression analysis to train and test set
         # Note this is for continuous trajectories only
-        hXtrain <- log(diag(1/gammas) %*% (Xtrain+1))
-        hXtraincenter <- apply(hXtrain, 2, function(u) u-mean(u))
-        pseudotime <- svd(hXtraincenter)$u[,1]
+        h.X.train <- log(diag(1/gammas) %*% (X.train+1))
+        h.X.train.center <- apply(h.X.train, 2, function(u) u - mean(u))
+        pseudotime <- svd(h.X.train.center)$u[,1]
         coeff.est <- apply(
-            Xtest, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+            X.test, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
         )
         popu.para.est <- suppressWarnings(apply(Lambda, 2, function(u) summary(glm(u~pseudotime, family="poisson"))$coefficients[2,1]))
 
@@ -27,7 +27,30 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
         abs(cbind(coeff.est, popu.para.est, true.cor))
     } else {
         # apply the k-fold data thinning to the subsample
-        X.folds <- apply(X, 2, function(u) rmultinom(n=length(u), size=u, prob=rep(1/K, K)))
+        X.folds <- apply(X, c(1, 2), function(u) rmultinom(n=length(u), size=u, prob=rep(1/K, K)))
+        
+        results <- apply(X.folds, c(1), function(fold) {
+            X.test <- fold
+            X.train <- X - X.test
+
+            # apply the latent variable estimation and differential expression analysis to train and test set
+            # Note this is for continuous trajectories only
+            h.X.train <- log(diag(1/gammas) %*% (X.train+1))
+            h.X.train.center <- apply(h.X.train, 2, function(u) u - mean(u))
+            pseudotime <- svd(h.X.train.center)$u[,1]
+            coeff.est <- apply(
+                X.test, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+            )
+            popu.para.est <- suppressWarnings(apply(Lambda, 2, function(u) summary(glm(u~pseudotime, family="poisson"))$coefficients[2,1]))
+
+            trueprincomp <- svd(apply(log(Lambda), 2, function(u) u-mean(u)))$u[,1]
+            true.cor <- cor(pseudotime, trueprincomp)
+
+            abs(cbind(coeff.est, popu.para.est, true.cor))
+        })
+
+        # reshape to [1:10, 1:3, 1:50]
+        results <- results + 1
     }
 
 }
@@ -91,10 +114,11 @@ datathin.multisplit <- function(
             Lambda.sub <- Lambda[tuple.mat[b,], ]   
             gammas.sub <- gammas[tuple.mat[b,]] 
 
-            if (k == 2) {
-                replicate(L, {datathin(data.sub, Lambda.sub, eps, gammas.sub, K)})  
+            if (K == 2) {
+                result <- replicate(L, {datathin(data.sub, Lambda.sub, eps, gammas.sub, K)})  
+                1 + 1
             } else {
-                
+                datathin(data.sub, Lambda.sub, eps, gammas.sub, K)
             }
                
         }, seed=TRUE)
