@@ -1,6 +1,11 @@
 #!/bin/bash
 #$ -cwd
 
-rm -rf ./res/*.csv
+nreps=50
+K=2
+m=50
+J=5
+L=50
 
-Rscript main_cluster.R --simname n_200_p_100 --nreps 100
+# NOTE: If m is NULL, do not include "--m $m" in the line
+Rscript main_cluster.R --simname n_200_p_100_nreps_${nreps}_K_${K}_m_${m}_J_${J}_L_${L} --nreps $nreps --K $K --m $m --J $J --L $L

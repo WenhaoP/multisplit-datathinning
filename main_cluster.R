@@ -7,7 +7,7 @@
 ## -----------------------------------------
 
 ## define packages to install
-packages <- c("argparse", "tidyr", "findpython", "mclust")
+packages <- c("argparse", "tidyr", "findpython", "mclust", "fdrtool")
 
 ## install all packages that are not already installed
 user_name = "wenhaop"
@@ -22,14 +22,8 @@ install.packages(
 ## load user-defined functions, packages
 ## -----------------------------------------
 
-## get command line arguments
-library("argparse", lib="/home/users/wenhaop/R_lib")
-## tidy stuff
-library("tidyr", lib="/home/users/wenhaop/R_lib")
-## find an acceptable python binary
-library("findpython", lib="/home/users/wenhaop/R_lib")
-## Gaussian Mixture Modelling
-library("mclust", lib="/home/users/wenhaop/R_lib")
+lapply(packages, library, character.only=TRUE, lib="/home/users/wenhaop/R_lib")
+
 ## Needed functions.
 source("run_sims.R")
 
@@ -41,6 +35,14 @@ parser$add_argument("--simname", default = "robust_ses",
                     help = "name of simulation")
 parser$add_argument("--nreps", type = "double", default = 200,
                     help = "number of replicates for each set of params")
+parser$add_argument("--K", type = "integer", default = 2,
+                    help = "number of data thinning folds")
+parser$add_argument("--m", type = "integer", default = NULL,
+                    help = "subsample size")
+parser$add_argument("--J", type = "integer", default = 5,
+                    help = "number of collections")
+parser$add_argument("--L", type = "integer", default = 50,
+                    help = "number of splits")
 args <- parser$parse_args()
 
 ## -----------------------------------------
@@ -56,8 +58,12 @@ propImps <- c(0.1)
 ns <- c(200)
 ps <- c(100)
 
-## number of monte-carlo iterations per job
-nreps_per_combo <- args$nreps
+## extract the hyperparameters
+nreps_per_combo <- args$nreps # number of monte-carlo iterations per job
+K <- args$K # number of data thinning folds
+m <- args$m # subsample size 
+J <- args$J # number of collections
+L <- args$L # number of splits
 
 ## set up grid of parameters
 param_grid <- expand.grid(
@@ -90,7 +96,10 @@ current_dynamic_args <- param_grid[jobid, ]
 current_seed <- jobid
 set.seed(current_seed)
 
-filename <- paste("res/", args$simname, jobid, ".csv", sep="")
+
+filename <- paste("res/", 
+    args$simname, "_", 
+    jobid, ".csv", sep="")
 
 ## epsilon candidates
 # eps=c(0.5)
@@ -102,10 +111,13 @@ system.time(replicate(nreps_per_combo,
         p=current_dynamic_args$p,
         filename,
         k=1,
-        K=2,
+        K=K,
         propImp=current_dynamic_args$propImp, 
         eps=eps, 
-        # L=10,
+        m=m,
+        J=J,
+        L=L,
+        reject.twoside=FALSE,
         sig_strength=current_dynamic_args$regCoeff,
         propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
         verbose=TRUE

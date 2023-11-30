@@ -4,25 +4,32 @@
 
 source("multisplit.R")
 
-countsplit <- function(X, Lambda, ep, gammas=rep(1,NROW(X))) {
-    # apply the 2-fold data thinning to the subsample
-    Xtrain <- apply(X,2,function(u) rbinom(n=length(u), size=u, p=ep))
-    Xtest <- X-Xtrain
+datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
 
-    # apply the latent variable estimation and differential expression analysis to train and test set
-    # Note this is for continuous trajectories only
-    hXtrain <- log(diag(1/gammas)%*%(Xtrain+1))
-    hXtraincenter <- apply(hXtrain,2,function(u) u-mean(u))
-    pseudotime <- svd(hXtraincenter)$u[,1]
-    coeff.est <- apply(
-        Xtest, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
-    )
-    popu.para.est <- suppressWarnings(apply(Lambda, 2, function(u) summary(glm(u~pseudotime, family="poisson"))$coefficients[2,1]))
+    if (K == 2) {
+        # apply the k-fold data thinning to the subsample
+        Xtrain <- apply(X, 2, function(u) rbinom(n=length(u), size=u, p=ep))
+        Xtest <- X - Xtrain
 
-    trueprincomp <- svd(apply(log(Lambda),2,function(u) u-mean(u)))$u[,1]
-    true.cor <- cor(pseudotime, trueprincomp)
+        # apply the latent variable estimation and differential expression analysis to train and test set
+        # Note this is for continuous trajectories only
+        hXtrain <- log(diag(1/gammas) %*% (Xtrain+1))
+        hXtraincenter <- apply(hXtrain, 2, function(u) u-mean(u))
+        pseudotime <- svd(hXtraincenter)$u[,1]
+        coeff.est <- apply(
+            Xtest, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+        )
+        popu.para.est <- suppressWarnings(apply(Lambda, 2, function(u) summary(glm(u~pseudotime, family="poisson"))$coefficients[2,1]))
 
-    cbind(coeff.est, popu.para.est, true.cor)
+        trueprincomp <- svd(apply(log(Lambda), 2, function(u) u-mean(u)))$u[,1]
+        true.cor <- cor(pseudotime, trueprincomp)
+
+        abs(cbind(coeff.est, popu.para.est, true.cor))
+    } else {
+        # apply the k-fold data thinning to the subsample
+        X.folds <- apply(X, 2, function(u) rmultinom(n=length(u), size=u, prob=rep(1/K, K)))
+    }
+
 }
 
 
@@ -39,7 +46,7 @@ countsplit <- function(X, Lambda, ep, gammas=rep(1,NROW(X))) {
 #'    powerful aggregation function in the list will be returned. The default value is mean.
 #' @param reject.larger The side of the test. Use `FALSE` if `test.single` returns
 #'    a p-value. The default value is TRUE.
-#' @param reject.larger Use 'FALSE' if the test is single-sided. The default value is
+#' @param reject.twoside Use 'FALSE' if the test is single-sided. The default value is
 #' TRUE.
 #' @param m The size of a subsample. The default value is floor(n / ln(n)) where n is 
 #' the sample size.
@@ -84,14 +91,19 @@ datathin.multisplit <- function(
             Lambda.sub <- Lambda[tuple.mat[b,], ]   
             gammas.sub <- gammas[tuple.mat[b,]] 
 
-            replicate(L, {countsplit(data.sub, Lambda.sub, eps, gammas.sub)})     
+            if (k == 2) {
+                replicate(L, {datathin(data.sub, Lambda.sub, eps, gammas.sub, K)})  
+            } else {
+                
+            }
+               
         }, seed=TRUE)
     }, .progress=ifelse(verbose, "text", "none"))
 
     T.mat <- plyr::laply(pval.jobs, future::value)
 
     # observed T
-    T.obs.vec <- replicate(L, countsplit(data, Lambda, eps, gammas)[, 1])
+    T.obs.vec <- replicate(L, datathin(data, Lambda, eps, gammas)[, 1])
     p.values <- numeric(p)
 
     # p.values <- apply(
@@ -140,18 +152,18 @@ datathin.multisplit <- function(
     #     }
     # )
 
-    coeff.ests <- T.mat[1:B, 1:p, 1, 1:L]
+    abs.coeff.ests <- T.mat[1:B, 1:p, 1, 1:L]
     for (j in seq_len(p)) {
         # retrieve value
-        T.mat.j <- coeff.ests[1:B, j, 1:L]
+        T.mat.j <- abs.coeff.ests[1:B, j, 1:L]
 
-        T.mat.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
-        T.mat.transformed <- matrix(T.mat.transformed, nrow=B)
+        T.mat.j.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
+        T.mat.j.transformed <- matrix(T.mat.j.transformed, nrow=B)
 
         # apply inverse CDF
-        T.mat.transformed <- stats::qnorm(T.mat.transformed)
+        T.mat.j.transformed <- fdrtool::qhalfnorm(T.mat.j.transformed)
         if (verbose) {
-            message(sprintf("Max change from rank transform = %g", max(abs(T.mat.transformed - T.mat.j))))
+            message(sprintf("Max change from rank transform = %g", max(abs(T.mat.j.transformed - T.mat.j))))
         }
 
         # aggregation 
@@ -161,7 +173,7 @@ datathin.multisplit <- function(
                 message(sprintf("Single aggregation function (reject for %s values)", ifelse(reject.larger, "larger", "smaller")))
             }
             T.obs <- S(T.obs.vec[j,])
-            T.sub <- apply(T.mat.transformed, 1, S)
+            T.sub <- apply(T.mat.j.transformed, 1, S)
             if (reject.larger) {
                 if (reject.twoside) {
                     p.value <- mean(abs(T.sub) > abs(T.obs))
@@ -181,7 +193,7 @@ datathin.multisplit <- function(
             message(sprintf("Adapting to the best among %d aggregation functions (reject for %s values)", length(S), ifelse(reject.larger, "larger", "smaller")))
             }
             T.obs <- sapply(S, function(.s) .s(T.obs.vec))
-            T.sub <- sapply(S, function(.s) apply(T.mat.transformed, 1, .s))
+            T.sub <- sapply(S, function(.s) apply(T.mat.j.transformed, 1, .s))
             p.value <- get.smart.agg.pval(T.obs, T.sub, reject.larger=reject.larger)
         }
 
@@ -189,8 +201,8 @@ datathin.multisplit <- function(
 
     }
 
-    popu.para.ests.mean <- apply(T.mat[1:B, 1:p, 2, 1:L], 2, mean)
-    true.corrs.mean <- apply(T.mat[1:B, 1:p, 3, 1:L], 2, mean)
+    abs.popu.para.ests.mean <- apply(T.mat[1:B, 1:p, 2, 1:L], 2, mean)
+    abs.true.corrs.mean <- apply(T.mat[1:B, 1:p, 3, 1:L], 2, mean)
 
-    cbind(p.values, popu.para.ests.mean, true.corrs.mean) # placeholder for correlation
+    cbind(p.values, abs.popu.para.ests.mean, abs.true.corrs.mean) # placeholder for correlation
 }

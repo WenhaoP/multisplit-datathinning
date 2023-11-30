@@ -32,7 +32,10 @@ one_trial <- function(
     propImp=0.1, 
     sig_strength=5, 
     propLowMedHigh = c(1/2,1/2), 
+    reject.twoside=TRUE,
     eps=c(0.5),
+    m=NULL,
+    J=5,
     L=50,
     verbose=FALSE) {
   intercepts <- sample(c(log(3), log(25)), prob=propLowMedHigh, replace=TRUE, size=p)
@@ -61,8 +64,11 @@ one_trial <- function(
             X,
             gammas,
             Lambda,
+            reject.twoside=reject.twoside,
             K=K,   
             eps=ep,
+            m=m,
+            J=J,
             L=L,
             verbose=verbose      
         ), 

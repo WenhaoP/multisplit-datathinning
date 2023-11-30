@@ -14,12 +14,11 @@ install.packages(
     lib=lib_dir
 ) # install packages only once to avoid errors when parallel computing
 
-library(tidyverse, lib="/home/users/wenhaop/R_lib")
-library(patchwork, lib="/home/users/wenhaop/R_lib")
+lapply(packages, library, character.only=TRUE, lib="/home/users/wenhaop/R_lib")
 # setwd("~/countsplit_paper/Fig3_mainsims_resubmit/")
 
 ## simulation name
-simname <- "n_200_p_100"
+simname <- "n_200_p_100_nreps_50_K_2_m_50_J_5_L_50"
 
 #### DATA FOR FIGS 2-4
 setwd("~/multisplit-datathinning/res")
@@ -28,7 +27,7 @@ res <- do.call(rbind,lapply(file_names,read.csv,sep=",",header=TRUE))
 
 res <- res %>% mutate(intercept2=round(exp(intercept)))
 null_res <- res %>% filter(trueCoeff==0, prop1==0.5)
-power_res <- res %>% filter(j <= 250)
+power_res <- res %>% filter(j <= 100)
 
 set.seed(1)
 subsamp <- sample(1:NROW(null_res), size=min(10^5, NROW(null_res)))
@@ -41,9 +40,9 @@ null_res_subset$intercept3 = ordered(null_res_subset$intercept3, levels=c("Low I
 setwd("~/")
 
 ###### TYPE 1 ERROR FIGURE
-p1null <- ggplot(data=null_res_subset, aes(sample=as.numeric(pval), col=as.factor(eps), group=eps))+
-  geom_qq(distribution=stats::qunif)+
-  facet_grid(col=vars(intercept3))+
+p1null <- ggplot(data=null_res_subset, aes(sample=as.numeric(pval), group=eps))+
+  geom_qq(distribution=stats::qunif, size=0.5)+
+  facet_grid(rows=vars(as.factor(eps)), cols=vars(intercept3))+
   geom_abline(slope=1, col="red")+
   ggtitle("Type 1 error")+
   labs(col=expression(epsilon))+
@@ -100,12 +99,13 @@ p1power.raw+plot_layout(guides="collect", nrow=1)
 ggsave(paste("~/multisplit-datathinning/figures/",simname, "_rawpower.png", sep=""))
 
 # GLM smoothing
-p1power <- ggplot(data=power_res, aes(x=abs(estPopuPara), y=as.numeric(pval<0.05), col=as.factor(eps)))+
+p1power <- ggplot(data=power_res, aes(x=abs(estPopuPara), y=as.numeric(pval<0.05)))+
   geom_smooth(se=FALSE, method="glm", method.args=list(family="binomial"))+
-  facet_grid(cols=vars(intercept3))+
+  facet_grid(rows=vars(as.factor(eps)), cols=vars(intercept3))+
   xlim(0, 5)+
   xlab(expression(beta(widehat(L)(X^{train}), bold(X)^{test}))) + ylab("Power")+ggtitle("Power")+
-  labs(col=expression(epsilon))+
+  scale_y_continuous(n.breaks=20)+
+  # labs(col=expression(epsilon))+
   theme_bw()
 
 p1power+plot_layout(guides="collect", nrow=1)

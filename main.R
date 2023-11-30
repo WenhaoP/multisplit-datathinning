@@ -9,6 +9,7 @@
 
 ## tidy stuff
 library("tidyr")
+library("fdrtool")
 ## Needed functions.
 source("run_sims.R")
 
