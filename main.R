@@ -10,6 +10,7 @@
 ## tidy stuff
 library("tidyr")
 library("fdrtool")
+library("reticulate")
 ## Needed functions.
 source("run_sims.R")
 
@@ -65,7 +66,7 @@ for (i in seq_len(nrow(param_grid))){
         p=current_dynamic_args$p,
         filename,
         k=1,
-        K=2,
+        K=5,
         propImp=current_dynamic_args$propImp, 
         eps=eps, 
         L=50,

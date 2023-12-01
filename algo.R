@@ -49,8 +49,7 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
             abs(cbind(coeff.est, popu.para.est, true.cor))
         })
 
-        # reshape to [1:10, 1:3, 1:50]
-        results <- results + 1
+        array(results, c(ncol(X), 3, K))
     }
 
 }
@@ -116,18 +115,21 @@ datathin.multisplit <- function(
 
             if (K == 2) {
                 result <- replicate(L, {datathin(data.sub, Lambda.sub, eps, gammas.sub, K)})  
-                1 + 1
             } else {
                 datathin(data.sub, Lambda.sub, eps, gammas.sub, K)
             }
-               
         }, seed=TRUE)
     }, .progress=ifelse(verbose, "text", "none"))
 
     T.mat <- plyr::laply(pval.jobs, future::value)
 
     # observed T
-    T.obs.vec <- replicate(L, datathin(data, Lambda, eps, gammas)[, 1])
+    if (K == 2) {
+        T.obs.vec <- replicate(L, datathin(data, Lambda, eps, gammas, K)[, 1])
+    } else {
+        T.obs.vec <- datathin(data, Lambda, eps, gammas, K)[, 1, ]
+    }
+    
     p.values <- numeric(p)
 
     # p.values <- apply(
@@ -176,10 +178,10 @@ datathin.multisplit <- function(
     #     }
     # )
 
-    abs.coeff.ests <- T.mat[1:B, 1:p, 1, 1:L]
+    abs.coeff.ests <- T.mat[, , 1, ]
     for (j in seq_len(p)) {
         # retrieve value
-        T.mat.j <- abs.coeff.ests[1:B, j, 1:L]
+        T.mat.j <- abs.coeff.ests[, j, ]
 
         T.mat.j.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
         T.mat.j.transformed <- matrix(T.mat.j.transformed, nrow=B)
@@ -225,8 +227,8 @@ datathin.multisplit <- function(
 
     }
 
-    abs.popu.para.ests.mean <- apply(T.mat[1:B, 1:p, 2, 1:L], 2, mean)
-    abs.true.corrs.mean <- apply(T.mat[1:B, 1:p, 3, 1:L], 2, mean)
+    abs.popu.para.ests.mean <- apply(T.mat[, , 2, ], 2, mean)
+    abs.true.corrs.mean <- apply(T.mat[, , 3, ], 2, mean)
 
     cbind(p.values, abs.popu.para.ests.mean, abs.true.corrs.mean) # placeholder for correlation
 }
