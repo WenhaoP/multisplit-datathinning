@@ -96,14 +96,17 @@ current_dynamic_args <- param_grid[jobid, ]
 current_seed <- jobid
 set.seed(current_seed)
 
+dir.name <- paste("res/", args$simname, sep="")
 
-filename <- paste("res/", 
-    args$simname, "_", 
-    jobid, ".csv", sep="")
+if (!file.exists(dir.name)) {dir.create(dir.name)}
+
+filename <- paste(dir.name, "/", jobid, ".csv", sep="")
 
 ## epsilon candidates
 # eps=c(0.5)
 eps=c(0.1,0.25,0.5,0.75,0.9)
+
+if (K > 2) {eps = c(1/K)}
  
 system.time(replicate(nreps_per_combo, 
     one_trial(

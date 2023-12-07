@@ -52,13 +52,17 @@ probMatrix <- rbind(
     c(1,0)
 )
 
+dir.name <- paste("res/", simname)
+
+if (not file.exists(dir.name)) {dir.create(dir.name)}
+
 for (i in seq_len(nrow(param_grid))){
 # for (i in seq_len(1)){
     set.seed(i)
     cat("Working on", i, "th parameter combination\n")
     current_dynamic_args <- param_grid[i,]
 
-    filename <- paste("res/", simname, i, ".csv", sep="")
+    filename <- paste(dir.name, i, ".csv", sep="")
 
     replicate(nreps_per_combo, 
         one_trial(
