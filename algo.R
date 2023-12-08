@@ -17,14 +17,21 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
         h.X.train.center <- apply(h.X.train, 2, function(u) u - mean(u))
         pseudotime <- svd(h.X.train.center)$u[,1]
         coeff.est <- apply(
-            X.test, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+            X.test, 2, function(u) {
+                # sign <- sample(c(-1, 1), size=1, prob=c(0.5, 0.5))
+                # sign*summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+                summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+            }
         )
         popu.para.est <- suppressWarnings(apply(Lambda, 2, function(u) summary(glm(u~pseudotime, family="poisson"))$coefficients[2,1]))
 
         trueprincomp <- svd(apply(log(Lambda), 2, function(u) u-mean(u)))$u[,1]
         true.cor <- cor(pseudotime, trueprincomp)
 
-        abs(cbind(coeff.est, popu.para.est, true.cor))
+        sign <- sample(c(-1, 1), size=length(coeff.est), replace=TRUE, prob=c(0.5, 0.5))
+        coeff.est <- sign * coeff.est
+
+        cbind(coeff.est, popu.para.est, true.cor)
     } else {
         # apply the k-fold data thinning to the subsample
         X.folds <- apply(X, c(1, 2), function(u) rmultinom(n=length(u), size=u, prob=rep(1/K, K)))
@@ -39,14 +46,21 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
             h.X.train.center <- apply(h.X.train, 2, function(u) u - mean(u))
             pseudotime <- svd(h.X.train.center)$u[,1]
             coeff.est <- apply(
-                X.test, 2, function(u) summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+                X.test, 2, function(u) {
+                    # sign <- sample(c(-1, 1), size=1, prob=c(0.5, 0.5))
+                    # sign * summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+                    summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
+                }
             )
             popu.para.est <- suppressWarnings(apply(Lambda, 2, function(u) summary(glm(u~pseudotime, family="poisson"))$coefficients[2,1]))
 
             trueprincomp <- svd(apply(log(Lambda), 2, function(u) u-mean(u)))$u[,1]
             true.cor <- cor(pseudotime, trueprincomp)
 
-            abs(cbind(coeff.est, popu.para.est, true.cor))
+            sign <- sample(c(-1, 1), size=length(coeff.est), replace=TRUE, prob=c(0.5, 0.5))
+            coeff.est <- sign * coeff.est
+
+            cbind(coeff.est, popu.para.est, true.cor)
         })
 
         array(results, c(ncol(X), 3, K))
@@ -178,16 +192,16 @@ datathin.multisplit <- function(
     #     }
     # )
 
-    abs.coeff.ests <- T.mat[, , 1, ]
+    coeff.ests <- T.mat[, , 1, ]
     for (j in seq_len(p)) {
         # retrieve value
-        T.mat.j <- abs.coeff.ests[, j, ]
+        T.mat.j <- coeff.ests[, j, ]
 
         T.mat.j.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
         T.mat.j.transformed <- matrix(T.mat.j.transformed, nrow=B)
 
         # apply inverse CDF
-        T.mat.j.transformed <- fdrtool::qhalfnorm(T.mat.j.transformed)
+        T.mat.j.transformed <- stats::qnorm(T.mat.j.transformed)
         if (verbose) {
             message(sprintf("Max change from rank transform = %g", max(abs(T.mat.j.transformed - T.mat.j))))
         }
@@ -227,8 +241,8 @@ datathin.multisplit <- function(
 
     }
 
-    abs.popu.para.ests.mean <- apply(T.mat[, , 2, ], 2, mean)
-    abs.true.corrs.mean <- apply(T.mat[, , 3, ], 2, mean)
+    popu.para.ests.mean <- apply(T.mat[, , 2, ], 2, mean)
+    true.corrs.mean <- apply(T.mat[, , 3, ], 2, mean)
 
-    cbind(p.values, abs.popu.para.ests.mean, abs.true.corrs.mean) # placeholder for correlation
+    cbind(p.values, popu.para.ests.mean, true.corrs.mean) # placeholder for correlation
 }
