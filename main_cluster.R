@@ -93,14 +93,19 @@ set.seed(current_seed)
 filename <- paste("res/", args$simname, jobid, ".csv", sep="")
 
 ## epsilon candidates
-# eps=c(0.5)
-eps=c(0.1,0.25,0.5,0.75,0.9)
- 
-system.time(replicate(nreps_per_combo, 
+eps=c(0.5)
+# eps=c(0.1,0.25,0.5,0.75,0.9)
+
+for (i in seq_len(nreps_per_combo)) {
+    foldername <- paste("res/", args$simname, jobid, "_", i, sep="")
+    if (!dir.exists(foldername)) {
+        dir.create(foldername)
+    }
     one_trial(
         n=current_dynamic_args$n,
         p=current_dynamic_args$p,
         filename,
+        foldername,
         k=1,
         K=2,
         propImp=current_dynamic_args$propImp, 
@@ -109,4 +114,20 @@ system.time(replicate(nreps_per_combo,
         sig_strength=current_dynamic_args$regCoeff,
         propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
         verbose=TRUE
-    )))
+    )
+}
+ 
+# system.time(replicate(nreps_per_combo, 
+#     one_trial(
+#         n=current_dynamic_args$n,
+#         p=current_dynamic_args$p,
+#         filename,
+#         k=1,
+#         K=2,
+#         propImp=current_dynamic_args$propImp, 
+#         eps=eps, 
+#         # L=10,
+#         sig_strength=current_dynamic_args$regCoeff,
+#         propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
+#         verbose=TRUE
+#     )))

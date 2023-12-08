@@ -50,26 +50,47 @@ probMatrix <- rbind(
     c(1,0)
 )
 
-for (i in seq_len(nrow(param_grid))){
+for (jobid in seq_len(nrow(param_grid))){
 # for (i in seq_len(1)){
-    set.seed(i)
-    cat("Working on", i, "th parameter combination\n")
-    current_dynamic_args <- param_grid[i,]
+    set.seed(jobid)
+    cat("Working on", jobid, "th parameter combination\n")
+    current_dynamic_args <- param_grid[jobid,]
 
-    filename <- paste("res/", simname, i, ".csv", sep="")
+    filename <- paste("res/", simname, jobid, ".csv", sep="")
 
-    replicate(nreps_per_combo, 
+    for (i in seq_len(nreps_per_combo)) {
+        foldername <- paste("res/", simname, jobid, "_", i, sep="")
+        if (!dir.exists(foldername)) {
+            dir.create(foldername)
+        }
         one_trial(
-        n=current_dynamic_args$n,
-        p=current_dynamic_args$p,
-        filename,
-        k=1,
-        K=2,
-        propImp=current_dynamic_args$propImp, 
-        eps=eps, 
-        L=15,
-        sig_strength=current_dynamic_args$regCoeff,
-        propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
-        verbose=TRUE
-    ))
+            n=current_dynamic_args$n,
+            p=current_dynamic_args$p,
+            filename,
+            foldername,
+            k=1,
+            K=2,
+            propImp=current_dynamic_args$propImp, 
+            eps=eps, 
+            L=10,
+            sig_strength=current_dynamic_args$regCoeff,
+            propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
+            verbose=TRUE
+        )
+    }
+
+    # replicate(nreps_per_combo, 
+    #     one_trial(
+    #     n=current_dynamic_args$n,
+    #     p=current_dynamic_args$p,
+    #     filename,
+    #     k=1,
+    #     K=2,
+    #     propImp=current_dynamic_args$propImp, 
+    #     eps=eps, 
+    #     L=10,
+    #     sig_strength=current_dynamic_args$regCoeff,
+    #     propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
+    #     verbose=TRUE
+    # ))
 }

@@ -27,6 +27,7 @@ one_trial <- function(
     n,
     p,
     filename, 
+    foldername,
     k=1,
     K=2,
     propImp=0.1, 
@@ -64,7 +65,8 @@ one_trial <- function(
             K=K,   
             eps=ep,
             L=L,
-            verbose=verbose      
+            verbose=verbose,
+            foldername=foldername      
         ), 
         ep, 
         "known", 
@@ -85,3 +87,4 @@ one_trial <- function(
 
   write.csv(result, filename, row.names=FALSE)
 }
+

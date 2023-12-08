@@ -59,7 +59,8 @@ datathin.multisplit <- function(
     m=NULL,
     J=5,
     L=50,
-    verbose=FALSE
+    verbose=FALSE,
+    foldername=NULL
 ) {
     n <- nrow(data) # sample size
     p <- ncol(data)
@@ -144,6 +145,33 @@ datathin.multisplit <- function(
     for (j in seq_len(p)) {
         # retrieve value
         T.mat.j <- coeff.ests[1:B, j, 1:L]
+
+        T.mat.j.df <- data.frame(b = rep(1:B, each=L), l = rep(1:L, B), coeff = c(t(T.mat.j)))
+
+        all_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
+            geom_histogram(aes(y=..density..)) +
+            geom_density() +
+            annotate("label", x = -2, y = 0.3, label=mean(coeff))
+        all_hist
+        ggsave(paste(getwd(), "/", foldername, "/j_", j, ".png", sep=""))
+
+        sub_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
+            geom_histogram(aes(y=..density..)) +
+            geom_density() +
+            facet_wrap(vars(as.factor(b)))
+        sub_hist
+        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_sub.png", sep=""))    
+        
+        # for (b in 1:B) {
+        #     # a <- 1 + 1 
+        #     foldername.sub <- paste(foldername,"_j_",j,"_b_",b)
+
+        #     coeff <- T.mat.j[b,]
+        #     hist <- ggplot()
+        #     hist(coeff, xlim=c(-5,5), freq=TRUE)
+        # }
+
+        # data.frame(b = rep(1:B, each=L), l = rep(1:L, B), value = c(t(T.mat.j)))
 
         T.mat.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
         T.mat.transformed <- matrix(T.mat.transformed, nrow=B)
