@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -cwd
 
-nreps=100
+nreps=50
 K=2
 m=NULL
 J=5

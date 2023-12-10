@@ -31,7 +31,7 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
         sign <- sample(c(-1, 1), size=length(coeff.est), replace=TRUE, prob=c(0.5, 0.5))
         coeff.est <- sign * coeff.est
 
-        cbind(coeff.est, popu.para.est, true.cor)
+        cbind(coeff.est, abs(popu.para.est), abs(true.cor))
     } else {
         # apply the k-fold data thinning to the subsample
         X.folds <- apply(X, c(1, 2), function(u) rmultinom(n=length(u), size=u, prob=rep(1/K, K)))
@@ -60,7 +60,7 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
             sign <- sample(c(-1, 1), size=length(coeff.est), replace=TRUE, prob=c(0.5, 0.5))
             coeff.est <- sign * coeff.est
 
-            cbind(coeff.est, popu.para.est, true.cor)
+            cbind(coeff.est, abs(popu.para.est), abs(true.cor))
         })
 
         array(results, c(ncol(X), 3, K))

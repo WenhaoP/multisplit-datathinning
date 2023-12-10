@@ -17,7 +17,7 @@ install.packages(
 lapply(packages, library, character.only=TRUE, lib="/home/users/wenhaop/R_lib")
 
 ## simulation name
-dir.name <- "n_200_p_100_nreps_50_K_5_m_NULL_J_5_L_50"
+dir.name <- "n_200_p_100_nreps_50_K_2_m_NULL_J_5_L_50_dummy"
 
 setwd("~/multisplit-datathinning/figures/")
 if (!file.exists(dir.name)) {dir.create(dir.name)}
@@ -93,7 +93,7 @@ power_res$intercept3[power_res$intercept2==3] =  "Low Intercept"
 power_res$intercept3 = ordered(power_res$intercept3, levels=c("Low Intercept",
                                                                           "High Intercept"))
 low <- 0
-high <- 3
+high <- 5
 width <- 0.05
 
 # power in different intervals
