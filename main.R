@@ -25,10 +25,14 @@ regCoeffs <- c(
     log(15), log(20))
 propImps <- c(0.1)
 ns <- c(200)
-ps <- c(10)
+ps <- c(100)
 
 ## number of monte-carlo iterations per job
-nreps_per_combo <- 10
+nreps_per_combo <- 10 # number of monte-carlo iterations per job
+K <- 2 # number of data thinning folds
+m <- NULL # subsample size 
+J <- 5 # number of collections
+L <- 50 # number of splits
 
 ## simulation name
 simname <- "test"
@@ -54,7 +58,7 @@ probMatrix <- rbind(
 
 dir.name <- paste("res/", simname)
 
-if (not file.exists(dir.name)) {dir.create(dir.name)}
+if (!file.exists(dir.name)) {dir.create(dir.name)}
 
 for (i in seq_len(nrow(param_grid))){
 # for (i in seq_len(1)){
@@ -62,20 +66,36 @@ for (i in seq_len(nrow(param_grid))){
     cat("Working on", i, "th parameter combination\n")
     current_dynamic_args <- param_grid[i,]
 
-    filename <- paste(dir.name, i, ".csv", sep="")
+    filename <- paste(dir.name, "/", i, ".csv", sep="")
 
-    replicate(nreps_per_combo, 
+    for (j in seq_len(nreps_per_combo)) {
+
+        foldername <- paste(dir.name, "/jobid_", i, sep="")
+        if (!dir.exists(foldername)) {
+            dir.create(foldername)
+        }
+
+        foldername <- paste(foldername, "/iter_", j, sep="")
+        if (!dir.exists(foldername)) {
+            dir.create(foldername)
+        }
+
         one_trial(
-        n=current_dynamic_args$n,
-        p=current_dynamic_args$p,
-        filename,
-        k=1,
-        K=5,
-        propImp=current_dynamic_args$propImp, 
-        eps=eps, 
-        L=50,
-        sig_strength=current_dynamic_args$regCoeff,
-        propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
-        verbose=TRUE
-    ))
+            n=current_dynamic_args$n,
+            p=current_dynamic_args$p,
+            filename,
+            foldername,
+            k=1,
+            K=K,
+            propImp=current_dynamic_args$propImp, 
+            eps=eps, 
+            m=m,
+            J=J,
+            L=L,
+            reject.twoside=TRUE,
+            sig_strength=current_dynamic_args$regCoeff,
+            propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
+            verbose=TRUE
+        )
+    }
 }

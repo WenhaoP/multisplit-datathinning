@@ -195,21 +195,34 @@ datathin.multisplit <- function(
         # retrieve value
         T.mat.j <- coeff.ests[, j, ]
 
+        
         # plot the coefficients
-        T.mat.j.df <- data.frame(b = rep(1:B, each=L), l = rep(1:L, B), coeff = c(t(T.mat.j)))
-        all_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
-            geom_histogram(aes(y=..density..)) +
-            geom_density() +
-            annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.df$coeff))
-        all_hist
-        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_all.png", sep=""))
+        if (j <= 20) {
+            T.mat.j.df <- data.frame(b = rep(1:B, each=L), l = rep(1:L, B), coeff = c(t(T.mat.j)))
+            all_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
+                geom_histogram(aes(y=..density..)) +
+                geom_density() +
+                labs(x=paste(j, "-th coeff", sep=""), title = "histogram of coefficients across all subsamples and splits") +
+                annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.df$coeff))
+            all_hist
+            ggsave(paste(getwd(), "/", foldername, "/j_", j, "_all.png", sep=""))
 
-        sub_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
-            geom_histogram(aes(y=..density..)) +
-            geom_density() +
-            facet_wrap(vars(as.factor(b)))
-        sub_hist
-        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_subsample.png", sep=""))
+            sub_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
+                geom_histogram(aes(y=..density..)) +
+                geom_density() +
+                facet_wrap(vars(as.factor(b))) +
+                labs(x=paste(j, "-th coeff", sep=""), title = "histogram of aggregated coefficients over splits across all subsamples") 
+            sub_hist
+            ggsave(paste(getwd(), "/", foldername, "/j_", j, "_subsample.png", sep=""))
+
+            T.obs.hist <- ggplot(data.frame(T.obs=T.obs.vec[j,]), aes(x=T.obs)) +
+                geom_histogram(aes(y=..density..)) +
+                geom_density() +
+                labs(x="observed test statistics", title = paste("histogram of observed test statistics for", j, "-th coeff", sep="")) +
+                annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.df$coeff))
+            T.obs.hist
+            ggsave(paste(getwd(), "/", foldername, "/j_", j, "_T_obs.png", sep=""))
+        }
 
         # rank transform
         T.mat.j.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  
@@ -222,20 +235,24 @@ datathin.multisplit <- function(
         }
 
         # plot the rank-transformed coefficients
-        T.mat.j.transformed.df <- data.frame(b = rep(1:B, each=L), l = rep(1:L, B), coeff = c(t(T.mat.j.transformed)))
-        all_hist <- ggplot(T.mat.j.transformed.df, aes(x=coeff)) +
-            geom_histogram(aes(y=..density..)) +
-            geom_density() +
-            annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.transformed.df$coeff))
-        all_hist
-        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_transformed_all.png", sep=""))
+        if (j <= 20) {
+            T.mat.j.transformed.df <- data.frame(b = rep(1:B, each=L), l = rep(1:L, B), coeff = c(t(T.mat.j.transformed)))
+            all_hist <- ggplot(T.mat.j.transformed.df, aes(x=coeff)) +
+                geom_histogram(aes(y=..density..)) +
+                geom_density() +
+                labs(x=paste(j, "-th coeff", sep=""), title = "histogram of rank-transformed coefficients across all subsamples and splits") +
+                annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.transformed.df$coeff))
+            all_hist
+            ggsave(paste(getwd(), "/", foldername, "/j_", j, "_transformed_all.png", sep=""))
 
-        sub_hist <- ggplot(T.mat.j.transformed.df, aes(x=coeff)) +
-            geom_histogram(aes(y=..density..)) +
-            geom_density() +
-            facet_wrap(vars(as.factor(b)))
-        sub_hist
-        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_transformed_subsample.png", sep=""))
+            sub_hist <- ggplot(T.mat.j.transformed.df, aes(x=coeff)) +
+                geom_histogram(aes(y=..density..)) +
+                geom_density() +
+                facet_wrap(vars(as.factor(b))) +
+                labs(x=paste(j, "-th coeff", sep=""), title = "histogram of aggregated coefficients over splits across all subsamples") 
+            sub_hist
+            ggsave(paste(getwd(), "/", foldername, "/j_", j, "_transformed_subsample.png", sep=""))
+        }
 
         # aggregation 
         if (!is.list(S)) {
