@@ -108,11 +108,24 @@ filename <- paste(dir.name, "/", jobid, ".csv", sep="")
 
 eps = c(1/K)
  
-system.time(replicate(nreps_per_combo, 
+
+for (i in seq_len(nreps_per_combo)) {
+
+    foldername <- paste(dir.name, "/jobid_", jobid, sep="")
+    if (!dir.exists(foldername)) {
+        dir.create(foldername)
+    }
+
+    foldername <- paste(foldername, "/iter_", i, sep="")
+    if (!dir.exists(foldername)) {
+        dir.create(foldername)
+    }
+
     one_trial(
         n=current_dynamic_args$n,
         p=current_dynamic_args$p,
         filename,
+        foldername,
         k=1,
         K=K,
         propImp=current_dynamic_args$propImp, 
@@ -120,8 +133,28 @@ system.time(replicate(nreps_per_combo,
         m=m,
         J=J,
         L=L,
-        reject.twoside=FALSE,
+        reject.twoside=TRUE,
         sig_strength=current_dynamic_args$regCoeff,
         propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
         verbose=TRUE
-    )))
+    )
+}
+
+
+# system.time(replicate(nreps_per_combo, 
+#     one_trial(
+#         n=current_dynamic_args$n,
+#         p=current_dynamic_args$p,
+#         filename,
+#         k=1,
+#         K=K,
+#         propImp=current_dynamic_args$propImp, 
+#         eps=eps, 
+#         m=m,
+#         J=J,
+#         L=L,
+#         reject.twoside=FALSE,
+#         sig_strength=current_dynamic_args$regCoeff,
+#         propLowMedHigh = probMatrix[current_dynamic_args$propLowMedHigh,],
+#         verbose=TRUE
+#     )))

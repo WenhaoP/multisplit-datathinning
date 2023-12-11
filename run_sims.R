@@ -27,6 +27,7 @@ one_trial <- function(
     n,
     p,
     filename, 
+    foldername,
     k=1,
     K=2,
     propImp=0.1, 
@@ -70,7 +71,8 @@ one_trial <- function(
             m=m,
             J=J,
             L=L,
-            verbose=verbose      
+            verbose=verbose,
+            foldername=foldername,      
         ), 
         ep, 
         "known", 
@@ -83,7 +85,7 @@ one_trial <- function(
     res <- res %>%
       as_tibble() %>%
       setNames(c("j", "trueCoeff", "intercept", "pval",
-        "estPopuPara", "cor", "eps", "type", "propImp",
+        "estPopuPara", "cor", "ObservedTestStat", "eps", "type", "propImp",
         "n", "p", "prop1"))
 
     result <- rbind(result, res)

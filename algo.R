@@ -18,8 +18,6 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
         pseudotime <- svd(h.X.train.center)$u[,1]
         coeff.est <- apply(
             X.test, 2, function(u) {
-                # sign <- sample(c(-1, 1), size=1, prob=c(0.5, 0.5))
-                # sign*summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
                 summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
             }
         )
@@ -47,8 +45,6 @@ datathin <- function(X, Lambda, ep, gammas=rep(1,NROW(X)), K=2) {
             pseudotime <- svd(h.X.train.center)$u[,1]
             coeff.est <- apply(
                 X.test, 2, function(u) {
-                    # sign <- sample(c(-1, 1), size=1, prob=c(0.5, 0.5))
-                    # sign * summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
                     summary(glm(u~pseudotime, offset=log(gammas), family="poisson"))$coefficients[2,3]
                 }
             )
@@ -102,7 +98,8 @@ datathin.multisplit <- function(
     m=NULL,
     J=5,
     L=50,
-    verbose=FALSE
+    verbose=FALSE,
+    foldername=NULL
 ) {
     n <- nrow(data) # sample size
     p <- ncol(data)
@@ -145,6 +142,7 @@ datathin.multisplit <- function(
     }
     
     p.values <- numeric(p)
+    T.obs.s <- numeric(p)
 
     # p.values <- apply(
     #     T.mat[1:B, 1:p, 1, 1:L],
@@ -197,7 +195,24 @@ datathin.multisplit <- function(
         # retrieve value
         T.mat.j <- coeff.ests[, j, ]
 
-        T.mat.j.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  # rank transform
+        # plot the coefficients
+        T.mat.j.df <- data.frame(b = rep(1:B, each=L), l = rep(1:L, B), coeff = c(t(T.mat.j)))
+        all_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
+            geom_histogram(aes(y=..density..)) +
+            geom_density() +
+            annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.df$coeff))
+        all_hist
+        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_all.png", sep=""))
+
+        sub_hist <- ggplot(T.mat.j.df, aes(x=coeff)) +
+            geom_histogram(aes(y=..density..)) +
+            geom_density() +
+            facet_wrap(vars(as.factor(b)))
+        sub_hist
+        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_subsample.png", sep=""))
+
+        # rank transform
+        T.mat.j.transformed <- (rank(T.mat.j, ties.method = "random") - 1/2) / length(T.mat.j)  
         T.mat.j.transformed <- matrix(T.mat.j.transformed, nrow=B)
 
         # apply inverse CDF
@@ -205,6 +220,22 @@ datathin.multisplit <- function(
         if (verbose) {
             message(sprintf("Max change from rank transform = %g", max(abs(T.mat.j.transformed - T.mat.j))))
         }
+
+        # plot the rank-transformed coefficients
+        T.mat.j.transformed.df <- data.frame(b = rep(1:B, each=L), l = rep(1:L, B), coeff = c(t(T.mat.j.transformed)))
+        all_hist <- ggplot(T.mat.j.transformed.df, aes(x=coeff)) +
+            geom_histogram(aes(y=..density..)) +
+            geom_density() +
+            annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.transformed.df$coeff))
+        all_hist
+        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_transformed_all.png", sep=""))
+
+        sub_hist <- ggplot(T.mat.j.transformed.df, aes(x=coeff)) +
+            geom_histogram(aes(y=..density..)) +
+            geom_density() +
+            facet_wrap(vars(as.factor(b)))
+        sub_hist
+        ggsave(paste(getwd(), "/", foldername, "/j_", j, "_transformed_subsample.png", sep=""))
 
         # aggregation 
         if (!is.list(S)) {
@@ -238,11 +269,12 @@ datathin.multisplit <- function(
         }
 
         p.values[j] <- p.value
+        T.obs.s[j] <- T.obs
 
     }
 
     popu.para.ests.mean <- apply(T.mat[, , 2, ], 2, mean)
     true.corrs.mean <- apply(T.mat[, , 3, ], 2, mean)
 
-    cbind(p.values, popu.para.ests.mean, true.corrs.mean) # placeholder for correlation
+    cbind(p.values, popu.para.ests.mean, true.corrs.mean, T.obs.s) # placeholder for correlation
 }
