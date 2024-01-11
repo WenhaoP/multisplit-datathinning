@@ -17,7 +17,7 @@ install.packages(
 lapply(packages, library, character.only=TRUE, lib="/home/users/wenhaop/R_lib")
 
 ## simulation name
-dir.name <- "n_200_p_100_nreps_50_K_2_m_NULL_J_5_L_50_dummy_hist"
+dir.name <- "n_200_p_100_nreps_25_K_2_m_NULL_J_5_L_200_dummy_hist"
 
 setwd("~/multisplit-datathinning/figures/")
 if (!file.exists(dir.name)) {dir.create(dir.name)}

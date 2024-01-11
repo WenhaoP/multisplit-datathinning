@@ -215,11 +215,12 @@ datathin.multisplit <- function(
             sub_hist
             ggsave(paste(getwd(), "/", foldername, "/j_", j, "_subsample.png", sep=""))
 
-            T.obs.hist <- ggplot(data.frame(T.obs=T.obs.vec[j,]), aes(x=T.obs)) +
+            T.obs.df <- data.frame(T.obs=T.obs.vec[j,])
+            T.obs.hist <- ggplot(T.obs.df, aes(x=T.obs)) +
                 geom_histogram(aes(y=..density..)) +
                 geom_density() +
                 labs(x="observed test statistics", title = paste("histogram of observed test statistics for", j, "-th coeff", sep="")) +
-                annotate("label", x = -2, y = 0.3, label=mean(T.mat.j.df$coeff))
+                annotate("label", x = -2, y = 0.3, label=mean(T.obs.df$T.obs))
             T.obs.hist
             ggsave(paste(getwd(), "/", foldername, "/j_", j, "_T_obs.png", sep=""))
         }
@@ -262,6 +263,18 @@ datathin.multisplit <- function(
             }
             T.obs <- S(T.obs.vec[j,])
             T.sub <- apply(T.mat.j.transformed, 1, S)
+
+            if (j <= 20) {
+                T.sub.df <- data.frame(T.sub=T.sub)
+                T.sub.hist <- ggplot(T.sub.df, aes(x=T.sub)) +
+                    geom_histogram(aes(y=..density..)) +
+                    geom_density() +
+                    labs(x="aggregated rank-transformed test statistics over splits", title = paste("histogram of aggregated rank-transformed test statistics over splits for", j, "-th coeff", sep="")) +
+                    annotate("label", x = -1, y = 1, label=mean(T.sub.df$T.sub))
+                T.sub.hist
+                ggsave(paste(getwd(), "/", foldername, "/j_", j, "_T_sub.png", sep=""))
+            }
+
             if (reject.larger) {
                 if (reject.twoside) {
                     p.value <- mean(abs(T.sub) > abs(T.obs))
